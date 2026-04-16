@@ -24,7 +24,7 @@ agents:
     #   command: claude-agent-acp
     #   args: []
     #   discord:
-    #     botToken: ""
+    #     enabled: true
     #     # ⚠️ Use --set-string for channel IDs to avoid float64 precision loss
     #     allowedChannels:
     #       - "YOUR_CHANNEL_ID"
@@ -60,7 +60,7 @@ agents:
     #   args:
     #     - acp
     #   discord:
-    #     botToken: ""
+    #     enabled: true
     #     allowedChannels:
     #       - "YOUR_CHANNEL_ID"
     #     allowedUsers: []
@@ -91,7 +91,7 @@ agents:
     #     - --workspace
     #     - /home/agent
     #   discord:
-    #     botToken: ""
+    #     enabled: true
     #     allowedChannels:
     #       - "YOUR_CHANNEL_ID"
     #     allowedUsers: []
@@ -115,8 +115,9 @@ agents:
       - acp
       - --trust-all-tools
     discord:
-      enabled: true      # set to false to disable; enabled with empty botToken is treated as disabled
-      botToken: ""
+      enabled: true      # set to false to disable the discord adapter
+      # botToken is no longer required at render time; the actual token
+      # is injected at runtime via the DISCORD_BOT_TOKEN env var.
       # ⚠️ Use --set-string for channel IDs to avoid float64 precision loss
       allowedChannels:
         - "YOUR_CHANNEL_ID"
