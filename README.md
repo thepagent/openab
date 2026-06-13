@@ -82,6 +82,8 @@ export DISCORD_BOT_TOKEN="your-token"
 cargo run
 ```
 
+> 🍎 **Running on macOS without Docker?** See [docs/macos-local.md](docs/macos-local.md) for a LaunchAgent setup guide, including a common PATH pitfall that causes silent `connection closed` errors.
+
 ## Configuration Reference
 
 ```toml
