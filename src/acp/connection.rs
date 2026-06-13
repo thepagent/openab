@@ -120,6 +120,7 @@ pub struct AcpConnection {
     pub last_active: Instant,
     pub session_reset: bool,
     _reader_handle: JoinHandle<()>,
+    _stderr_handle: JoinHandle<()>,
 }
 
 impl AcpConnection {
@@ -135,7 +136,7 @@ impl AcpConnection {
         cmd.args(args)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::null())
+            .stderr(std::process::Stdio::piped())
             .current_dir(working_dir);
         // Create a new process group so we can kill the entire tree.
         // SAFETY: setpgid is async-signal-safe (POSIX.1-2008) and called
@@ -192,6 +193,7 @@ impl AcpConnection {
             .and_then(|pid| i32::try_from(pid).ok());
 
         let stdout = proc.stdout.take().ok_or_else(|| anyhow!("no stdout"))?;
+        let stderr = proc.stderr.take().ok_or_else(|| anyhow!("no stderr"))?;
         let stdin = proc.stdin.take().ok_or_else(|| anyhow!("no stdin"))?;
         let stdin = Arc::new(Mutex::new(stdin));
 
@@ -294,6 +296,27 @@ impl AcpConnection {
             })
         };
 
+        let stderr_handle = tokio::spawn(async move {
+            let mut reader = BufReader::new(stderr);
+            let mut line = String::new();
+            loop {
+                line.clear();
+                match reader.read_line(&mut line).await {
+                    Ok(0) => break,
+                    Ok(_) => {
+                        let trimmed = line.trim();
+                        if !trimmed.is_empty() {
+                            tracing::warn!(target: "openab::acp::agent_stderr", "{}", trimmed);
+                        }
+                    }
+                    Err(e) => {
+                        error!("stderr reader error: {e}");
+                        break;
+                    }
+                }
+            }
+        });
+
         Ok(Self {
             _proc: proc,
             child_pgid,
@@ -307,6 +330,7 @@ impl AcpConnection {
             last_active: Instant::now(),
             session_reset: false,
             _reader_handle: reader_handle,
+            _stderr_handle: stderr_handle,
         })
     }
 
